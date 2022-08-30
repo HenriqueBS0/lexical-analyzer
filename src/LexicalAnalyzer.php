@@ -8,9 +8,9 @@ use HenriqueBS0\Automaton\AutomatonException;
 class LexicalAnalyzer {
     private Automaton $automaton;
 
-    public function __construct(/*Automaton $automaton */)
+    public function __construct(Automaton $automaton)
     {
-        // $this->automaton = $automaton;
+        $this->automaton = $automaton;
     }
 
     private function getAutomaton() : Automaton 
@@ -35,30 +35,41 @@ class LexicalAnalyzer {
 
             $position = Position::get($characteres, $startReadingPosition, $readPosition);
 
+            $isLastCharacter = $readPosition === $endReadingPosition;
+
             try {
                 $finalState = $this->getAutomaton()->getFinalState($partInput); 
                 $token = new Token($finalState, $partInput, $position);
-            }
-            catch(AutomatonException $ex) {
 
-                $unexpectedCharacter  = $ex->getCode() === AutomatonException::CODE_UNEXPECTED_INPUT_CHARACTER;
-                $noValidToken         = is_null($token);
-
-                if($unexpectedCharacter || $noValidToken) {
-                    throw new LexicalAnalyzerException($position, $tokens, $ex->getMessage());
+                if($isLastCharacter) {
+                    $tokens->push($token);
                 }
 
-                $tokens->push($token);
-                $startReadingPosition = $token->getPosition()->getEndPosition() + 1;
-                $readPosition = $token->getPosition()->getEndPosition() + 1;
+                $readPosition++;
             }
+            catch(AutomatonException $ex) {
+                $lastStateIsNotFinal  = $ex->getCode() === AutomatonException::CODE_LAST_STATE_IS_NOT_FINAL;                
+                $noValidToken         = is_null($token);
 
-            if($readPosition === $endReadingPosition) {
-                $tokens->push($token);
+                $throw = $noValidToken && (!$lastStateIsNotFinal || $isLastCharacter);
+
+                if($throw) {
+                    throw new LexicalAnalyzerException($position, $tokens->reverseOrdering(), $ex->getMessage());
+                }
+
+                if($lastStateIsNotFinal) {
+                    $readPosition++;
+                }
+                else {
+                    $tokens->push($token);                    
+                    $startReadingPosition = $token->getPosition()->getEndPosition() + 1;
+                    $readPosition = $token->getPosition()->getEndPosition() + 1;
+                    $token = null;
+                }
             }
         }
 
-        return $tokens;
+        return $tokens->reverseOrdering();
     }
 
     private static function getPartInput(array $characteres, int $startPostion, int $endPosition) {
