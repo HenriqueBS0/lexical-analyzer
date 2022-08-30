@@ -7,6 +7,11 @@ use HenriqueBS0\DataStructures\Stack;
 class TokenStack {
     private Stack $stack;
 
+    public function __construct()
+    {
+        $this->stack = new Stack();
+    }
+
     public function push(Token $token) : void 
     {
         $this->stack->push($token);
@@ -22,8 +27,22 @@ class TokenStack {
         return $this->stack->pop();
     }
 
-    public function isEmpty(Token $token) : bool 
+    public function isEmpty() : bool 
     {
-        return $this->stack->isEmpty($token);
+        return $this->stack->isEmpty();
+    }
+
+    public function reverseOrdering() : self
+    {
+
+        $newStack = new Stack();
+
+        while (!$this->stack->isEmpty()) {
+            $newStack->push($this->stack->pop());
+        }
+
+        $this->stack = $newStack;
+
+        return $this;
     }
 }
