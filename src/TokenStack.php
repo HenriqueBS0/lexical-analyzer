@@ -24,7 +24,7 @@ class TokenStack {
 
     public function top() : Token 
     {
-        return $this->stack->pop();
+        return $this->stack->top();
     }
 
     public function isEmpty() : bool 
